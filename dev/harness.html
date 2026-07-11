@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>SkyHaul — presentation harness</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #14100b; color: #f2e3c0;
+               font: 13px ui-monospace, Menlo, monospace; }
+  #wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px; }
+  canvas { border: 2px solid #3a2f20; border-radius: 4px; background: #000; }
+  #legend { max-width: 960px; opacity: 0.75; line-height: 1.7; }
+  b { color: #e8b64c; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="cv" width="960" height="540"></canvas>
+  <div id="legend">
+    <b>1</b> flight (Notch) · <b>2</b> takeoff roll · <b>3</b> crashed · <b>4</b> landing loop ·
+    <b>5</b> briefing · <b>6</b> debrief · <b>7</b> menu · <b>8</b> hangar · <b>9</b> stall —
+    ↑↓ pitch, W/S throttle work in scene 1
+  </div>
+</div>
+<script type="module" src="./harness.js"></script>
+</body>
+</html>
