@@ -1,9 +1,13 @@
 # SkyHaul ✈️
 
+### [▶ Play SkyHaul](https://anthony-michael.github.io/flyby/)
+
+[![CI](https://github.com/Anthony-Michael/flyby/actions/workflows/ci.yml/badge.svg)](https://github.com/Anthony-Michael/flyby/actions/workflows/ci.yml)
+
 A bush-pilot cargo flying game for the browser. Take off, thread the mountain passes of the Kettle Range, and — most importantly — land *gently*. The landing grade is your paycheck.
 
 - **Tech:** HTML5 Canvas + vanilla ES modules. Zero build step, zero dependencies.
-- **Play:** serve the folder statically (`npm start` → http://localhost:8000) or host on GitHub Pages.
+- **Play:** [in your browser](https://anthony-michael.github.io/flyby/), or serve the folder statically (`npm start` → http://localhost:8000).
 - **Test:** `npm test` (uses `node --test`, no deps).
 
 ## Features
