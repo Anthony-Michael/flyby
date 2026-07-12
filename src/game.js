@@ -118,6 +118,20 @@ export function startGame(canvas, win) {
     S.transitioning = false;
   }
 
+  // End the run as a failure for reasons the sim itself doesn't model (overfly).
+  async function failFlight(label) {
+    S.transitioning = true;
+    await hooks.onMissionEnd();
+    S.debrief = {
+      grade: { score: 0, stars: 0, crashed: true, breakdown: [{ label, deduction: 100 }] },
+      payoutLines: [],
+      success: false,
+    };
+    S.selection = 0;
+    S.screen = 'DEBRIEF';
+    S.transitioning = false;
+  }
+
   function crashLabel(reason) {
     return {
       'hard-impact': 'Hard impact — gear collapsed',
@@ -185,6 +199,13 @@ export function startGame(canvas, win) {
       juice.update(frameSeconds);
       if ((S.sim.phase === 'LANDED' && Math.abs(S.sim.plane.vx) < 0.5) || S.sim.phase === 'CRASHED') {
         if (!S.transitioning) finishFlight();
+      }
+      // Overfly: the plane can't turn around, so sailing far past the strip would
+      // otherwise strand the flight in limbo. The HUD warns first (strip-behind
+      // arrow + "YOU PASSED THE STRIP"); past 1.2 km the run ends as a failure.
+      const endR = S.mission.endRunway;
+      if (S.sim.phase === 'AIRBORNE' && S.sim.plane.x > endR.x + endR.length + 1200 && !S.transitioning) {
+        failFlight('Flew past the destination strip');
       }
     }
 

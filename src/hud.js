@@ -300,19 +300,74 @@ export function createHud(ctx) {
     x += cwFUEL;
     sep(x);
 
-    // --- 6. distance to destination ---
-    const distM = Math.max(0, (level.endRunway ? level.endRunway.x : 0) - p.x);
+    // --- 6. distance to destination (directional: negative = strip behind you) ---
+    const endR = level.endRunway || { x: 0, length: 0 };
+    const stripEnd = endR.x + endR.length;
+    const past = p.x > stripEnd; // overflew the strip
+    const distM = past ? p.x - stripEnd : Math.max(0, endR.x - p.x);
     const dTxt = distM >= 1000 ? (distM / 1000).toFixed(1) + ' km' : Math.round(distM) + ' m';
     ctx.font = `700 20px ${MONO}`;
-    ctx.fillStyle = P.cream;
+    ctx.fillStyle = past ? P.amber : P.cream;
     ctx.textAlign = 'right';
-    const arrowPulse = distM < 800 && flash(t, 2) ? P.gold : P.creamDim;
-    ctx.fillText(dTxt, w - 34, cy + 12);
-    ctx.fillStyle = arrowPulse;
-    ctx.fillText('▸', w - 14, cy + 12);
+    const arrowPulse = (past || distM < 800) && flash(t, 2) ? P.gold : P.creamDim;
+    if (past) {
+      // strip is behind: arrow on the left, amber
+      ctx.fillText(dTxt, w - 14, cy + 12);
+      ctx.fillStyle = arrowPulse;
+      ctx.textAlign = 'left';
+      ctx.fillText('◂', w - 34 - ctx.measureText(dTxt).width - 14, cy + 12);
+      ctx.textAlign = 'right';
+    } else {
+      ctx.fillText(dTxt, w - 34, cy + 12);
+      ctx.fillStyle = arrowPulse;
+      ctx.fillText('▸', w - 14, cy + 12);
+    }
     ctx.font = `600 9px ${MONO}`;
-    ctx.fillStyle = P.creamDim;
-    ctx.fillText('TO STRIP', w - 14, y0 + 15);
+    ctx.fillStyle = past ? P.amber : P.creamDim;
+    ctx.fillText(past ? 'STRIP BEHIND' : 'TO STRIP', w - 14, y0 + 15);
+
+    // ---- overfly warning: you cannot turn around in this ship ----
+    if (past && !p.onGround && simState.phase === 'AIRBORNE' && distM > 60) {
+      ctx.textAlign = 'center';
+      ctx.font = `800 22px ${MONO}`;
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = 'rgba(30,20,12,0.85)';
+      ctx.strokeText('YOU PASSED THE STRIP', w / 2, h * 0.24);
+      ctx.fillStyle = flash(t, 2) ? P.amber : P.cream;
+      ctx.fillText('YOU PASSED THE STRIP', w / 2, h * 0.24);
+      ctx.font = `600 14px ${MONO}`;
+      ctx.fillStyle = P.creamDim;
+      ctx.fillText('R — RETRY THE RUN', w / 2, h * 0.24 + 26);
+    }
+
+    // ---- tutorial hints (First Solo only): teach the four beats of a flight ----
+    if (level.id === 'm1' && simState.phase !== 'CRASHED') {
+      let hint = null;
+      const airspeed2 = airspeed; // instrument 1's value
+      if (simState.phase === 'ROLLOUT' && p.onGround && p.throttle < 0.95 && airspeed2 < 21) {
+        hint = 'HOLD  W  — THROTTLE UP';
+      } else if (simState.phase === 'ROLLOUT' && p.onGround && airspeed2 >= 21) {
+        hint = 'HOLD  ↑  — PULL BACK TO LIFT OFF';
+      } else if (simState.phase === 'ROLLOUT' && !p.onGround) {
+        hint = 'EASE OFF  ↑  — CLIMB GENTLY';
+      } else if (simState.phase === 'AIRBORNE' && !past && distM > 500) {
+        hint = '↑/↓ PITCH  ·  W/S THROTTLE  ·  FLY RIGHT TO THE NEXT STRIP  ▸';
+      } else if (simState.phase === 'AIRBORNE' && !past && distM <= 500) {
+        hint = 'THROTTLE DOWN · DESCEND · TOUCH DOWN SOFT (WATCH VERT SPEED)';
+      } else if (simState.phase === 'LANDED' && Math.abs(p.vx) > 0.5) {
+        hint = 'HOLD  B  — BRAKE TO A STOP';
+      }
+      if (hint) {
+        ctx.textAlign = 'center';
+        ctx.font = `700 15px ${MONO}`;
+        const tw = ctx.measureText(hint).width;
+        rr(w / 2 - tw / 2 - 14, h * 0.115 - 17, tw + 28, 28, 6);
+        ctx.fillStyle = 'rgba(24,18,12,0.72)';
+        ctx.fill();
+        ctx.fillStyle = P.gold;
+        ctx.fillText(hint, w / 2, h * 0.115 + 3);
+      }
+    }
 
     // ---- ROTATE cue ----
     const evts = simState.events || [];
@@ -527,10 +582,14 @@ export function createHud(ctx) {
       ctx.stroke();
       yy += 26;
     }
+    // controls strip — onboarding: every pilot sees the stick layout before flying
+    ctx.font = `600 12px ${MONO}`;
+    ctx.fillStyle = 'rgba(74,58,36,0.85)';
+    ctx.textAlign = 'center';
+    ctx.fillText('W/S THROTTLE  ·  ↑/↓ PITCH  ·  B BRAKES  ·  R RESTART', cx + cw / 2, cyTop + ch - 50);
     // footer
     ctx.font = `700 15px ${MONO}`;
     ctx.fillStyle = P.ox;
-    ctx.textAlign = 'center';
     ctx.fillText('ENTER — TAKE THE JOB', cx + cw / 2, cyTop + ch - 22);
     ctx.textAlign = 'left';
     void selection;
