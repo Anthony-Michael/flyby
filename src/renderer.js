@@ -138,9 +138,13 @@ export function createRenderer(ctx) {
   function drawTerrain(level, w, h) {
     const pts = level.terrain;
     // smoothed fill (VISUAL ONLY — collision stays linear, DESIGN §8)
+    // Extend the fill well past both ends of the terrain data (physics clamps to the
+    // end elevations, so the visual ground must too — a fixed 2000 px apron used to
+    // run out ~330 m past the last point, leaving floating trees over bare sky).
+    const EXT = 1e6; // px; effectively infinite ground beyond the data
     ctx.beginPath();
     let [sx0, sy0] = toScreen(pts[0][0], pts[0][1], w, h);
-    ctx.moveTo(sx0 - 2000, sy0);
+    ctx.moveTo(sx0 - EXT, sy0);
     ctx.lineTo(sx0, sy0);
     for (let i = 1; i < pts.length - 1; i++) {
       const [ax, ay] = toScreen(pts[i][0], pts[i][1], w, h);
@@ -150,10 +154,10 @@ export function createRenderer(ctx) {
     const last = pts[pts.length - 1];
     const [lx, ly] = toScreen(last[0], last[1], w, h);
     ctx.lineTo(lx, ly);
-    ctx.lineTo(lx + 2000, ly);
+    ctx.lineTo(lx + EXT, ly);
     // close down to bottom
-    ctx.lineTo(lx + 2000, h + 40);
-    ctx.lineTo(sx0 - 2000, h + 40);
+    ctx.lineTo(lx + EXT, h + 40);
+    ctx.lineTo(sx0 - EXT, h + 40);
     ctx.closePath();
     const g = ctx.createLinearGradient(0, h * 0.2, 0, h);
     g.addColorStop(0, C.terrainTop);

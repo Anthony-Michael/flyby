@@ -202,9 +202,10 @@ export function startGame(canvas, win) {
       }
       // Overfly: the plane can't turn around, so sailing far past the strip would
       // otherwise strand the flight in limbo. The HUD warns first (strip-behind
-      // arrow + "YOU PASSED THE STRIP"); past 1.2 km the run ends as a failure.
+      // arrow + "YOU PASSED THE STRIP"); 400 m past the strip the run ends as a
+      // failure — a few seconds of warning, not a scenic tour off the map.
       const endR = S.mission.endRunway;
-      if (S.sim.phase === 'AIRBORNE' && S.sim.plane.x > endR.x + endR.length + 1200 && !S.transitioning) {
+      if (S.sim.phase === 'AIRBORNE' && S.sim.plane.x > endR.x + endR.length + 400 && !S.transitioning) {
         failFlight('Flew past the destination strip');
       }
     }
