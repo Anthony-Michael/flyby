@@ -35,3 +35,12 @@ First-timers still crash ~100% — their impacts are −6..−8 m/s (earned); tu
 ## Rerunnable tools in this directory
 `run.js` (skill matrix) · `impact-probe.mjs` · `funnel-probe.mjs` · `miss-probe.mjs` ·
 `campaign-probe.mjs` · `hardcore-campaign.mjs` · `qa-input-mash.mjs` · `qa-phase*.mjs`
+
+## Post-ship addendum: campaign feasibility verdict (feasibility.mjs)
+A max-performance climber (full throttle, best-climb pitch, real sim) reaches the
+destination strip on ALL 8 missions — no impossible walls. m7 at continuous full
+throttle arrives with exactly 0.0 L (intended: cruise throttle leaves margin).
+m6/m8 short strips are 3× the braked landing roll. m4 casual completion confirmed
+at 5/10 (was 0/10 pre-retune). m5/m6/m8 persona failures are pilot-model route
+planning, not level design — calibrating their human difficulty needs the smarter
+reference pilot (round 2).
