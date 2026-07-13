@@ -227,17 +227,19 @@ test('terrain contact away from any runway crashes as off-runway', () => {
 test('bounce: leaving the ground after touchdown re-grades with the 20-point deduction', () => {
   const touchdown = { vy: -0.5, vx: 22, pitch: 0.1, x: 1833, bounced: false };
   const firstGrade = gradeTouchdown(touchdown, LEVEL.endRunway);
-  // Landed, still rolling fast with the nose held high: lift will exceed gravity.
+  // Landed but rolling very fast with the nose held high AND full throttle: even
+  // through the weight-on-wheels lift dump (which kills accidental balloons),
+  // a deliberate go-around attempt can still lift off — and counts as a bounce.
   let sim = {
     ...createSimState(LEVEL, KESTREL),
     phase: 'LANDED',
     touchdown,
     grade: firstGrade,
-    plane: { x: 1840, y: 20, vx: 26, vy: 0, pitch: 0.3, throttle: 0, fuel: 30, onGround: true, braking: false, crashed: false },
+    plane: { x: 1840, y: 20, vx: 40, vy: 0, pitch: 0.3, throttle: 1, fuel: 30, onGround: true, braking: false, crashed: false },
   };
   let bouncedTick = null;
-  for (let i = 0; i < 60 && bouncedTick === null; i++) {
-    sim = step(sim, { pitch: 1, throttleDelta: 0, brake: false }, LEVEL, KESTREL, DT);
+  for (let i = 0; i < 300 && bouncedTick === null; i++) {
+    sim = step(sim, { pitch: 1, throttleDelta: 1, brake: false }, LEVEL, KESTREL, DT);
     if (sim.events.includes('liftoff')) bouncedTick = i;
   }
   assert.notEqual(bouncedTick, null, 'plane should balloon back into the air');

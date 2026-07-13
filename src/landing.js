@@ -2,10 +2,17 @@
 // Owned by: Dev A (sim core). Tolerances/scoring: docs/DESIGN.md §5.
 
 // §5 tolerance contract — change only alongside the unit tests.
-const MAX_SINK = -2.5; // m/s: vy below this at contact = hard impact
-const MAX_SPEED = 30; // m/s ground speed at contact
-const MIN_PITCH = -0.03; // rad: below = nose-gear strike
-const MAX_PITCH = 0.21; // rad: above = tail strike
+// Retuned after the round-1 playtest program: across 90 simulated casual-player
+// crashes, hard impacts had median sink −4.3 m/s and EVERY too-fast touchdown was
+// 30.3–31.5 m/s — players miss by 20–50%, not by miles. Survival is now forgiving;
+// the grade formula (unchanged) keeps excellence hard: a −4 m/s "arrival" survives
+// but scores ★ and pays the inspection fee.
+export const DEFAULT_TOLERANCES = {
+  CRASH_VY: 4.0, // m/s sink at contact beyond this = hard impact (was 2.5)
+  CRASH_VX: 34, // m/s ground speed at contact beyond this = too fast (was 30)
+  MIN_PITCH: -0.05, // rad: below = nose-gear strike (was -0.03)
+  MAX_PITCH: 0.24, // rad: above = tail strike (was 0.21)
+};
 
 function clamp(v, lo, hi) {
   return v < lo ? lo : v > hi ? hi : v;
@@ -15,23 +22,27 @@ function clamp(v, lo, hi) {
  * Crash check at instant of ground contact.
  * @param {object} state   plane state at contact
  * @param {object|null} runway  {x, length, elevation} or null (off-runway contact = crash)
+ * @param {object} [plane]  plane constants; reads CRASH_VY/CRASH_VX (upgrades like
+ *                          Tundra tires raise them). Omitted → DEFAULT_TOLERANCES.
  * @returns {{ crashed: boolean, reason: string|null }}  reason e.g. 'hard-impact'|'too-fast'|'nose-strike'|'tail-strike'|'off-runway'
  */
-export function checkCrash(state, runway) {
+export function checkCrash(state, runway, plane) {
+  const maxSink = -(plane?.CRASH_VY ?? DEFAULT_TOLERANCES.CRASH_VY);
+  const maxSpeed = plane?.CRASH_VX ?? DEFAULT_TOLERANCES.CRASH_VX;
   if (!runway || state.x < runway.x || state.x > runway.x + runway.length) {
     return { crashed: true, reason: 'off-runway' };
   }
-  if (state.vy < MAX_SINK) {
+  if (state.vy < maxSink) {
     return { crashed: true, reason: 'hard-impact' };
   }
   // |vx| so a plane landing while headed left is judged by the same speed limit.
-  if (Math.abs(state.vx) > MAX_SPEED) {
+  if (Math.abs(state.vx) > maxSpeed) {
     return { crashed: true, reason: 'too-fast' };
   }
-  if (state.pitch < MIN_PITCH) {
+  if (state.pitch < DEFAULT_TOLERANCES.MIN_PITCH) {
     return { crashed: true, reason: 'nose-strike' };
   }
-  if (state.pitch > MAX_PITCH) {
+  if (state.pitch > DEFAULT_TOLERANCES.MAX_PITCH) {
     return { crashed: true, reason: 'tail-strike' };
   }
   return { crashed: false, reason: null };

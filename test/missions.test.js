@@ -60,12 +60,12 @@ test('mission table matches DESIGN §6 exactly', () => {
   const rows = {
     //     type       km   kg   base gust fuel  reward
     m1: ['CARGO', 1.5, 0, 0, 0, 40, 80],
-    m2: ['CARGO', 3, 50, 2, 0, 40, 120],
+    m2: ['CARGO', 3, 50, 1, 0, 40, 120], // tailwind 2→1: round-1 playtests, all controllers floated past the strip
     m3: ['CARGO', 3, 250, 0, 0, 40, 180],
     m4: ['CARGO', 4, 100, -5, 1, 40, 220],
     m5: ['CARGO', 5, 100, -2, 1, 40, 300],
     m6: ['CHARTER', 4, 90, -3, 2, 40, 400],
-    m7: ['URGENT', 9, 150, -4, 2, 30, 450],
+    m7: ['URGENT', 9, 150, -4, 2, 33, 450], // fuel 30→33: 30 L was the exact required burn, zero margin
     m8: ['CARGO', 6, 200, -6, 4, 40, 600],
   };
   for (const [id, [type, km, kg, baseX, gustAmp, fuelL, reward]] of Object.entries(rows)) {
@@ -100,8 +100,8 @@ test('signature twists: strips, fuel, hazards per §6', () => {
   // m6: 180 m destination shelf
   assert.equal(byId.m6.endRunway.length, 180);
 
-  // m7: fuel is the boss — 30 L, has a time par (URGENT)
-  assert.equal(byId.m7.fuelL, 30);
+  // m7: fuel is the boss — 33 L (~10% margin over the required burn), time par (URGENT)
+  assert.equal(byId.m7.fuelL, 33);
   assert.ok(byId.m7.parTimeS > 0);
 
   // m8: 150 m cliff-edge strip + downdraft on final

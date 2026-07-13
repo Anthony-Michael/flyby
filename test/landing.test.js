@@ -10,25 +10,34 @@ function contact(over = {}) {
 }
 
 // --- §5 crash tolerances, each side of every threshold -----------------------
+// Base tolerances retuned for casual survivability after round-1 playtesting
+// (see DESIGN §5): sink −4.0, speed 34, pitch −0.05..+0.24. Per-plane override
+// via the optional third arg is how upgrades (Tundra tires) take effect.
 
-test('vertical speed: vy < -2.5 m/s is a hard impact', () => {
-  assert.deepEqual(checkCrash(contact({ vy: -2.49 }), RUNWAY), { crashed: false, reason: null });
-  assert.deepEqual(checkCrash(contact({ vy: -2.51 }), RUNWAY), { crashed: true, reason: 'hard-impact' });
+test('vertical speed: vy < -4.0 m/s is a hard impact', () => {
+  assert.deepEqual(checkCrash(contact({ vy: -3.99 }), RUNWAY), { crashed: false, reason: null });
+  assert.deepEqual(checkCrash(contact({ vy: -4.01 }), RUNWAY), { crashed: true, reason: 'hard-impact' });
 });
 
-test('ground speed: vx > 30 m/s is too fast', () => {
-  assert.deepEqual(checkCrash(contact({ vx: 29.9 }), RUNWAY), { crashed: false, reason: null });
-  assert.deepEqual(checkCrash(contact({ vx: 30.1 }), RUNWAY), { crashed: true, reason: 'too-fast' });
+test('ground speed: vx > 34 m/s is too fast', () => {
+  assert.deepEqual(checkCrash(contact({ vx: 33.9 }), RUNWAY), { crashed: false, reason: null });
+  assert.deepEqual(checkCrash(contact({ vx: 34.1 }), RUNWAY), { crashed: true, reason: 'too-fast' });
 });
 
-test('pitch below -0.03 rad is a nose-gear strike', () => {
-  assert.deepEqual(checkCrash(contact({ pitch: -0.029 }), RUNWAY), { crashed: false, reason: null });
-  assert.deepEqual(checkCrash(contact({ pitch: -0.031 }), RUNWAY), { crashed: true, reason: 'nose-strike' });
+test('pitch below -0.05 rad is a nose-gear strike', () => {
+  assert.deepEqual(checkCrash(contact({ pitch: -0.049 }), RUNWAY), { crashed: false, reason: null });
+  assert.deepEqual(checkCrash(contact({ pitch: -0.051 }), RUNWAY), { crashed: true, reason: 'nose-strike' });
 });
 
-test('pitch above 0.21 rad is a tail strike', () => {
-  assert.deepEqual(checkCrash(contact({ pitch: 0.209 }), RUNWAY), { crashed: false, reason: null });
-  assert.deepEqual(checkCrash(contact({ pitch: 0.211 }), RUNWAY), { crashed: true, reason: 'tail-strike' });
+test('pitch above 0.24 rad is a tail strike', () => {
+  assert.deepEqual(checkCrash(contact({ pitch: 0.239 }), RUNWAY), { crashed: false, reason: null });
+  assert.deepEqual(checkCrash(contact({ pitch: 0.241 }), RUNWAY), { crashed: true, reason: 'tail-strike' });
+});
+
+test('per-plane tolerances: Tundra tires raise the survivable sink rate', () => {
+  const tires = { CRASH_VY: 5.2, CRASH_VX: 34 };
+  assert.deepEqual(checkCrash(contact({ vy: -4.5 }), RUNWAY, tires), { crashed: false, reason: null });
+  assert.deepEqual(checkCrash(contact({ vy: -5.3 }), RUNWAY, tires), { crashed: true, reason: 'hard-impact' });
 });
 
 test('contact outside the runway span is always off-runway', () => {

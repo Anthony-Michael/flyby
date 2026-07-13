@@ -108,12 +108,18 @@ export function step(simState, input, level, plane, dt) {
   const events = [];
   const windEnv = windEnvOf(level);
   const wind = windAt(windEnv, simState.plane.x, t);
-  const env = { windX: wind.windX, windY: wind.windY, cargoKg: level.cargoKg ?? 0 };
+  const env = {
+    windX: wind.windX,
+    windY: wind.windY,
+    cargoKg: level.cargoKg ?? 0,
+    groundY: terrainHeightAt(level.terrain, simState.plane.x), // ground effect
+    wow: simState.phase === 'LANDED' && simState.plane.onGround, // lift dump after touchdown
+  };
 
   const flown = stepPlane(simState.plane, input, plane, env, dt);
   const terrainY = terrainHeightAt(level.terrain, flown.x);
   const runway = runwayAt(level, flown.x);
-  const resolved = resolveGround(flown, terrainY, runway);
+  const resolved = resolveGround(flown, terrainY, runway, plane, simState.phase === 'ROLLOUT');
 
   let plane2 = resolved.state;
   let { phase, bounced, touchdown, grade, crashReason } = simState;
@@ -140,22 +146,24 @@ export function step(simState, input, level, plane, dt) {
   if (resolved.event === 'crash') {
     events.push('crash');
     phase = 'CRASHED';
-    // resolveGround only reports the event; recover the reason from the same
-    // pre-resolution contact state it checked (pure, so identical result).
-    crashReason = checkCrash(flown, runway).reason ?? 'terrain';
+    crashReason = resolved.reason ?? checkCrash(flown, runway, plane).reason ?? 'terrain';
     grade = null;
   }
 
   if (resolved.event === 'touchdown') {
     events.push('touchdown');
-    if (phase === 'AIRBORNE') {
+    // A touchdown on the DESTINATION runway is a landing even if the flight
+    // never crossed the +15 m takeoff-complete gate (hedge-hopping the whole
+    // route at 10 m AGL is flying; without this the mission could never end).
+    const onEndRunway = runway && level.endRunway && runway.x === level.endRunway.x;
+    if (phase === 'AIRBORNE' || (phase === 'ROLLOUT' && onEndRunway)) {
       // First touchdown of the landing: record contact numbers and grade now
       // (bounce, if it happens later, re-grades with the deduction — see above).
       touchdown = { vy: flown.vy, vx: flown.vx, pitch: flown.pitch, x: flown.x, bounced: false };
       grade = gradeTouchdown(touchdown, runway);
       phase = 'LANDED';
     }
-    // In ROLLOUT (settled back onto the strip before takeoff-complete) or
+    // In ROLLOUT on the start strip (settled back before takeoff-complete) or
     // LANDED (bounce re-contact) the phase does not change.
   }
 
@@ -181,12 +189,19 @@ export function step(simState, input, level, plane, dt) {
   // --- rolling off a runway end (§5) ---------------------------------------
   if (plane2.onGround && !plane2.crashed && !runway) {
     if (phase === 'LANDED') {
-      // Rolling off the runway end after touchdown → crash. Brake!
-      phase = 'CRASHED';
-      crashReason = 'overrun';
-      grade = null;
-      plane2 = { ...plane2, crashed: true };
-      events.push('crash');
+      if (Math.abs(plane2.vx) > 15) {
+        // Rolling off the runway end after touchdown at speed → crash. Brake!
+        phase = 'CRASHED';
+        crashReason = 'overrun';
+        grade = null;
+        plane2 = { ...plane2, crashed: true };
+        events.push('crash');
+      } else {
+        // Trundling off the end at jogging pace just bumps into the grass —
+        // extra drag stops the plane; the landing grade stands.
+        const cut = GRASS_DRAG * dt;
+        plane2 = { ...plane2, vx: Math.sign(plane2.vx) * Math.max(0, Math.abs(plane2.vx) - cut) };
+      }
     } else if (phase === 'ROLLOUT') {
       if (terrainY > startElev + 0.5) {
         // Overrun into rising terrain → crash.

@@ -208,6 +208,13 @@ export function startGame(canvas, win) {
       if (S.sim.phase === 'AIRBORNE' && S.sim.plane.x > endR.x + endR.length + 400 && !S.transitioning) {
         failFlight('Flew past the destination strip');
       }
+      // Taxi limbo: rolling the whole route on the ground and parking at the
+      // destination never produces a touchdown, so the sim can't end the run.
+      const p2 = S.sim.plane;
+      if (S.sim.phase === 'ROLLOUT' && p2.onGround && p2.vx === 0 && S.sim.t > 5
+          && p2.x >= endR.x && p2.x <= endR.x + endR.length && !S.transitioning) {
+        failFlight('The mail goes by AIR — taxiing the whole way doesn’t count');
+      }
     }
 
     win.__skyhaul = S; // dev hook: inspect live game state from the console

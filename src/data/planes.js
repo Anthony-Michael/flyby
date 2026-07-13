@@ -36,8 +36,8 @@ export const PLANES = {
     BRAKE_DECEL: 3.5,
     MASS_FACTOR_PER_KG: 1 / 1000,
     tankL: 40,
-    CRASH_VY: 2.5,
-    CRASH_VX: 30,
+    CRASH_VY: 4.0,
+    CRASH_VX: 34,
     ROUGH_DRAG: 3.0,
   },
   mule: {
@@ -60,8 +60,8 @@ export const PLANES = {
     BRAKE_DECEL: 3.5,
     MASS_FACTOR_PER_KG: 1 / 2000, // cargo penalty halved
     tankL: 60,
-    CRASH_VY: 2.5,
-    CRASH_VX: 30,
+    CRASH_VY: 4.0,
+    CRASH_VX: 34,
     ROUGH_DRAG: 3.0,
   },
   swift: {
@@ -84,8 +84,8 @@ export const PLANES = {
     BRAKE_DECEL: 3.5,
     MASS_FACTOR_PER_KG: 1 / 1000,
     tankL: 35,
-    CRASH_VY: 2.5,
-    CRASH_VX: 30,
+    CRASH_VY: 4.0,
+    CRASH_VX: 34,
     ROUGH_DRAG: 3.0,
   },
 };
@@ -96,8 +96,8 @@ export const UPGRADES = {
     id: 'tires',
     name: 'Tundra tires',
     cost: 300,
-    desc: 'Crash tolerance vy −2.5 → −3.2 m/s; rough-strip drag penalty halved.',
-    applies: (c) => ({ ...c, CRASH_VY: 3.2, ROUGH_DRAG: c.ROUGH_DRAG / 2 }),
+    desc: 'Crash tolerance vy −4.0 → −5.2 m/s; rough-strip drag penalty halved.',
+    applies: (c) => ({ ...c, CRASH_VY: c.CRASH_VY + 1.2, ROUGH_DRAG: c.ROUGH_DRAG / 2 }),
   },
   engine: {
     id: 'engine',

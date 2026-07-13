@@ -221,7 +221,7 @@ test('upgrades: tires/engine/tank effects per DESIGN §7', () => {
 
   const k = PLANES.kestrel;
   const tired = UPGRADES.tires.applies(k);
-  assert.equal(tired.CRASH_VY, 3.2);
+  assert.equal(tired.CRASH_VY, 5.2); // base 4.0 + 1.2
   assert.equal(tired.ROUGH_DRAG, k.ROUGH_DRAG / 2);
   const tuned = UPGRADES.engine.applies(k);
   assert.ok(Math.abs(tuned.MAX_THRUST - 6.9) < 1e-9); // +15%
@@ -232,9 +232,9 @@ test('upgrades: tires/engine/tank effects per DESIGN §7', () => {
 test('effectivePlane: applies owned upgrades, never mutates PLANES', () => {
   const save = { ...freshSave(), upgrades: { kestrel: ['tires', 'engine'] } };
   const eff = effectivePlane('kestrel', save);
-  assert.equal(eff.CRASH_VY, 3.2);
+  assert.equal(eff.CRASH_VY, 5.2);
   assert.ok(Math.abs(eff.MAX_THRUST - 6.9) < 1e-9);
-  assert.equal(PLANES.kestrel.CRASH_VY, 2.5);
+  assert.equal(PLANES.kestrel.CRASH_VY, 4.0);
   assert.equal(PLANES.kestrel.MAX_THRUST, 6.0);
   // no upgrades → deep-equal to base
   assert.deepEqual(effectivePlane('swift', freshSave()), PLANES.swift);

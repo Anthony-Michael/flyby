@@ -158,9 +158,9 @@ No pass/fail gate — takeoff is self-enforcing physics. You *can't* lift off be
 
 | Check | Crash if | Notes |
 |---|---|---|
-| Vertical speed | `vy < -2.5` m/s | descent rate at contact |
-| Ground speed | `vx > 30` m/s | too hot |
-| Pitch attitude | `pitch < -0.03` rad (−2°) → **nose-gear strike**; `pitch > 0.21` rad (+12°) → **tail strike** | |
+| Vertical speed | `vy < -CRASH_VY` (base **−4.0** m/s, per-plane; tires +1.2) | retuned from −2.5 after round-1 playtesting: 79 simulated casual crashes clustered at −2.5…−4.3 m/s. Survival is forgiving; the grade formula (unchanged) keeps ★★★ hard — a −4 m/s arrival survives but scores ★ and pays the inspection fee |
+| Ground speed | `vx > CRASH_VX` (base **34** m/s, per-plane) | retuned from 30: every observed too-fast touchdown was 30.3–31.5 m/s |
+| Pitch attitude | `pitch < -0.05` rad (−3°) → **nose-gear strike**; `pitch > 0.24` rad (+14°) → **tail strike** | widened from −2°/+12° |
 | Position | touchdown point outside `[runway.x, runway.x + runway.length]` | terrain contact off-runway is always a crash |
 | Stop | rolling off runway end after touchdown → crash | brake! |
 
@@ -195,12 +195,12 @@ Three mission archetypes (all data-driven, same code path):
 | # | Name | Type | Dist | Cargo | Wind (base / gust) | Hazard / twist | Fuel given | Reward |
 |---|---|---|---|---|---|---|---|---|
 | 1 | First Solo | CARGO | 1.5 km | 0 kg | 0 / 0 | None. Flat terrain, 400 m strips. Tutorial prompts. | 40 L | $80 |
-| 2 | Mail Run | CARGO | 3 km | 50 kg | +2 m/s tail / 0 | Gentle hills | 40 L | $120 |
+| 2 | Mail Run | CARGO | 3 km | 50 kg | +1 m/s tail / 0 | Gentle hills | 40 L | $120 |
 | 3 | Feed Drop | CARGO | 3 km | 250 kg | 0 / 0 | Heavy: rotation ~25 m/s, climb is a slog | 40 L | $180 |
 | 4 | Headwind Haul | CARGO | 4 km | 100 kg | **−5 m/s head** / 1 | Headwind: watch fuel, groundspeed ≠ airspeed lesson | 40 L | $220 |
 | 5 | The Notch | CARGO | 5 km | 100 kg | −2 / 1 | **Mountain pass**: 300 m ridge with a 60 m-wide gap; fly through or climb over | 40 L | $300 |
 | 6 | Doc Whitfield | CHARTER | 4 km | 90 kg | −3 / 2 | Must land ★★ or better; destination strip only 180 m | 40 L | $400 |
-| 7 | Long Haul | URGENT | 9 km | 150 kg | −4 / 2 | **Fuel is the boss**: 30 L given; full-throttle the whole way flames out short | **30 L** | $450 |
+| 7 | Long Haul | URGENT | 9 km | 150 kg | −4 / 2 | **Fuel is the boss**: 30 L given; full-throttle the whole way flames out short | **33 L** | $450 |
 | 8 | Storm Strip | CARGO | 6 km | 200 kg | −6 / **4 gust** | Gusts + downdraft zone on final + 150 m cliff-edge strip | 40 L | $600 |
 
 After mission 8: **Free Contracts** — infinite procedurally-parameterized missions (seeded from a counter, so deterministic) with reward scaling by distance × weight × wind. This is the retention loop; it's cheap because missions are data (§8).
