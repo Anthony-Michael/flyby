@@ -140,6 +140,26 @@ export function createJuice() {
     src.start();
   }
 
+  // Bright two-note ring-pass chime (E6 → B6), short and cheerful.
+  function chime() {
+    const a = ac();
+    if (!a) return;
+    for (const [freq, when] of [[1318.5, 0], [1975.5, 0.09]]) {
+      const osc = a.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const g = a.createGain();
+      const t0 = a.currentTime + when;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.12, t0 + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+      osc.connect(g);
+      g.connect(a.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.25);
+    }
+  }
+
   function ensureEngine() {
     const a = ac();
     if (!a || engineOsc) return;
@@ -263,6 +283,21 @@ export function createJuice() {
       } else if (ev === 'stall-warning') {
         stallUntil = time + 0.3;
         if (enabled.sound) ensureStall();
+      } else if (ev === 'ring-pass') {
+        // sparkle burst at the plane + a bright two-note chime
+        for (let i = 0; i < 12; i++) {
+          const ang = (i / 12) * Math.PI * 2;
+          spawn({
+            type: 'streak',
+            x: p.x, y: p.y,
+            vx: Math.cos(ang) * (4 + Math.random() * 3),
+            vy: Math.sin(ang) * (4 + Math.random() * 3),
+            r: 0.5,
+            life: 0.5 + Math.random() * 0.3,
+            maxLife: 0.8,
+          });
+        }
+        chime();
       }
     }
 

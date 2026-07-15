@@ -12,6 +12,7 @@ import { createRenderer } from './renderer.js';
 import { createHud } from './hud.js';
 import { createJuice } from './juice.js';
 import { hooks } from './monetize.js';
+import { ringsForLevel, ringHit, BONUS_PER_RING } from './rings.js';
 
 const DT = 1 / 60;
 const MAX_FRAME = 0.1; // clamp long frames (tab switch) so the accumulator doesn't spiral
@@ -54,6 +55,8 @@ export function startGame(canvas, win) {
     mission: null,               // active mission/level object
     plane: null,                 // effective plane constants for the flight
     sim: null,                   // SimState during FLY
+    rings: [],                   // ring course for the active mission
+    ringsPassed: new Set(),      // indices of rings flown through
     paused: false,
     accumulator: 0,
     lastTime: null,
@@ -73,6 +76,8 @@ export function startGame(canvas, win) {
     S.mission = mission;
     S.plane = effectivePlane(save.activePlane, save);
     S.sim = createSimState(mission, S.plane);
+    S.rings = ringsForLevel(mission);
+    S.ringsPassed = new Set();
     S.paused = false;
     S.accumulator = 0;
     S.screen = 'FLY';
@@ -105,7 +110,14 @@ export function startGame(canvas, win) {
     } else {
       const isRepeat = Boolean(save.missionsCompleted[S.mission.id]);
       const result = { stars: sim.grade.stars, score: sim.grade.score, timeS: sim.t };
-      const { payout, lines } = missionPayout(S.mission, result, isRepeat);
+      let { payout, lines } = missionPayout(S.mission, result, isRepeat);
+      // bonus rings pay on a successful delivery only
+      const bonusHit = [...S.ringsPassed].filter((i) => S.rings[i].kind === 'bonus').length;
+      if (bonusHit > 0) {
+        const ringMoney = bonusHit * BONUS_PER_RING;
+        payout += ringMoney;
+        lines = [...lines, { label: `Bonus rings ×${bonusHit}`, amount: ringMoney }];
+      }
       save = recordCompletion(save, S.mission.id, { ...result, payout });
       if (S.mission.id.startsWith('fc')) save = { ...save, freeContractCounter: save.freeContractCounter + 1 };
       persistSave(save);
@@ -197,8 +209,16 @@ export function startGame(canvas, win) {
       S.accumulator += frameSeconds;
       while (S.accumulator >= DT) {
         S.accumulator -= DT;
+        const prevPos = { x: S.sim.plane.x, y: S.sim.plane.y };
         S.sim = step(S.sim, input.read(), S.mission, S.plane, DT);
         juice.onEvents(S.sim.events, S.sim);
+        // ring pass-throughs (guide rings confirm the path; bonus rings pay)
+        for (let i = 0; i < S.rings.length; i++) {
+          if (!S.ringsPassed.has(i) && ringHit(prevPos, S.sim.plane, S.rings[i])) {
+            S.ringsPassed.add(i);
+            juice.onEvents(['ring-pass'], S.sim);
+          }
+        }
       }
       juice.update(frameSeconds);
       if ((S.sim.phase === 'LANDED' && Math.abs(S.sim.plane.vx) < 0.5) || S.sim.phase === 'CRASHED') {
@@ -228,6 +248,7 @@ export function startGame(canvas, win) {
       shakeX: off.x,
       shakeY: off.y,
       particles: (pctx, camera) => juice.drawParticles(pctx, camera),
+      rings: { defs: S.rings, passed: S.ringsPassed },
     });
     hud.drawFlightHUD(S.sim, S.mission, S.plane);
     if (S.paused) drawPauseOverlay();

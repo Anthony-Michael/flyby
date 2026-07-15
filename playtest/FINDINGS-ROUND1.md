@@ -31,6 +31,7 @@ First-timers still crash ~100% — their impacts are −6..−8 m/s (earned); tu
 - Economy pacing unvalidated (grind rate $/min).
 - Browser-level QA (Enter/R spam, resize, mid-session storage corruption) not yet run.
 - Free-contract fuzz beyond validateLevel (difficulty sanity at high counters).
+- **Gameplay variety (direct player feedback 2026-07-14: "not much going on other than flying and landing")** — rings shipped as a first answer (guide rings m1–m2, $ bonus rings m3+); next candidates in rough priority: par-time chase surfaced on more missions, collectible mail-bag pickups that reward route detours, visible updraft thermals to ride (zones exist, make them a fuel/speed strategy), simple hazards (birds/weather cells to dodge), day/dusk light variation between missions, touch controls for phones.
 
 ## Rerunnable tools in this directory
 `run.js` (skill matrix) · `impact-probe.mjs` · `funnel-probe.mjs` · `miss-probe.mjs` ·

@@ -300,6 +300,8 @@ Left → right:
 - Tire chirp: 40 ms noise burst on touchdown (WebAudio, generated).
 - Grade toast: big "★★★ GREASED IT · −0.4 m/s" slam-in on debrief.
 - Parallax: 3 background layers (far ridge 0.2×, near hills 0.5×, cloud blobs 0.8×) — biggest visual win per line of code in the game.
+- **Flight-path rings** (post-launch, from player feedback): guide rings (cream, dashed) trace the ideal climb/cruise/glide path on m1–m2; gold bonus rings on m3+ pay $10 each on delivery. Pure course generation in `rings.js`; pass detection in the shell; chime + sparkle on pass.
+- **Altitude readability**: ground shadow under the plane (scales/fades with AGL ≤120 m); when the ground is off-screen, a dashed plumb line with "▼ N m" shows how far down it is.
 
 ---
 

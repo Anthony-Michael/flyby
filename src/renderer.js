@@ -505,6 +505,98 @@ export function createRenderer(ctx) {
     ctx.fillRect(0, 0, w, h);
   }
 
+  // ---------- guidance & readability ----------
+
+  // Flight-path rings: guide rings (cream, dashed) trace the tutorial route;
+  // bonus rings (gold) pay money. Passed rings collapse to a faint tick.
+  function drawRings(rings, t, w, h) {
+    const defs = rings.defs || [];
+    const passed = rings.passed || new Set();
+    for (let i = 0; i < defs.length; i++) {
+      const rg = defs[i];
+      const [sx, sy] = toScreen(rg.x, rg.y, w, h);
+      const rpx = rg.r * PX;
+      if (sx < -rpx - 40 || sx > w + rpx + 40) continue;
+      const done = passed.has(i);
+      const bonus = rg.kind === 'bonus';
+      ctx.save();
+      if (done) {
+        ctx.globalAlpha = 0.25;
+        ctx.strokeStyle = C.stripe;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, rpx * 0.35, rpx * 0.35, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        const pulse = 1 + 0.05 * Math.sin(t * 3 + i);
+        ctx.strokeStyle = bonus ? '#e8b64c' : 'rgba(244,236,216,0.85)';
+        ctx.lineWidth = bonus ? 5 : 4;
+        if (!bonus) ctx.setLineDash([10, 8]);
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, rpx * pulse, rpx * pulse, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // inner glint
+        ctx.globalAlpha = 0.25;
+        ctx.strokeStyle = bonus ? '#fff0c0' : '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, rpx * pulse * 0.82, rpx * pulse * 0.82, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        if (bonus) {
+          ctx.globalAlpha = 0.9;
+          ctx.fillStyle = '#e8b64c';
+          ctx.font = '700 12px ui-monospace, monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('$', sx, sy + 4);
+        }
+      }
+      ctx.restore();
+    }
+  }
+
+  // Ground shadow directly below the plane — the classic altitude tell.
+  function drawShadow(p, level, w, h) {
+    if (p.crashed) return;
+    const gy = terrainYAt(level.terrain, p.x);
+    const agl = Math.max(0, p.y - gy);
+    if (agl > 120) return; // too high to matter (the altitude cue takes over)
+    const [sx, sy] = toScreen(p.x, gy, w, h);
+    if (sy < -20 || sy > h + 20) return;
+    const k = Math.max(0, 1 - agl / 120); // bigger & darker when low
+    ctx.save();
+    ctx.globalAlpha = 0.10 + 0.20 * k;
+    ctx.fillStyle = '#1c150c';
+    ctx.beginPath();
+    ctx.ellipse(sx, sy - 1, (10 + 14 * k), (2 + 2.5 * k), 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // When the ground has scrolled off-screen, judging height is guesswork —
+  // drop a dashed plumb line from the plane toward the ground with the AGL.
+  function drawAltitudeCue(p, level, w, h) {
+    if (p.onGround || p.crashed) return;
+    const gy = terrainYAt(level.terrain, p.x);
+    const [, groundSy] = toScreen(p.x, gy, w, h);
+    if (groundSy <= h + 10) return; // ground visible — shadow does the job
+    const [sx, sy] = toScreen(p.x, p.y, w, h);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(44,37,23,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 8]);
+    ctx.beginPath();
+    ctx.moveTo(sx, sy + 22);
+    ctx.lineTo(sx, h - 26);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(44,37,23,0.75)';
+    ctx.font = '700 12px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`▼ ${Math.round(p.y - gy)} m`, sx, h - 12);
+    ctx.restore();
+  }
+
   // ---------- main ----------
   function render(simState, level, viewFx = {}) {
     const w = ctx.canvas.width;
@@ -532,7 +624,10 @@ export function createRenderer(ctx) {
     drawRunway(level, level.startRunway, level.wind, w, h);
     drawRunway(level, level.endRunway, level.wind, w, h);
     drawTrees(level, w, h);
+    if (viewFx.rings) drawRings(viewFx.rings, simState.t || 0, w, h);
+    drawShadow(p, level, w, h);
     drawPlane(p, simState.t || 0, w, h);
+    drawAltitudeCue(p, level, w, h);
 
     // particles (juice) — drawn in world space via camera
     const camera = {
