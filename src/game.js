@@ -186,7 +186,11 @@ export function startGame(canvas, win) {
   }
 
   function updateFlight(frameSeconds) {
-    if (input.consumeRestart()) { startFlight(S.mission); return; }
+    // Restart is ignored while a finishFlight() transition is pending (awaiting
+    // hooks.onMissionEnd — a portal interstitial can take real time): otherwise
+    // the fresh attempt gets silently frozen and then bounced into the stale
+    // debrief for the flight the player already abandoned.
+    if (input.consumeRestart() && !S.transitioning) { startFlight(S.mission); return; }
     if (input.consumePause()) S.paused = !S.paused;
 
     if (!S.paused && !S.transitioning) {
